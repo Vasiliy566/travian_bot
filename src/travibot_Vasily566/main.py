@@ -1,3 +1,4 @@
+import logging
 import random
 import time
 from datetime import datetime
@@ -9,6 +10,8 @@ from selenium.common import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+
+logger = logging.getLogger(__name__)
 
 
 class MainBuildSlot:
@@ -98,7 +101,7 @@ def upgrade_building_on_main(driver, tier: int, url: str, building_tier1: List[T
             else:
                 # Строим еще домик ( открывается после 10 лвла прокачки старого)
                 if len(existing_buildings) != amount and all([e.level == required_level for e in existing_buildings]):
-                    print(f"Choose to build as new {build_name}")
+                    logger.info(f"Choose to build as new {build_name}")
                     empty[0].subslot.click()
                     # Ищем в инфраструктуре, если нет - в вкладке Военные, затем промышленность
 
@@ -122,7 +125,7 @@ def upgrade_building_on_main(driver, tier: int, url: str, building_tier1: List[T
                 # апгрейд
                 else:
                     upgrade_me = [e for e in existing_buildings if e.level < required_level]
-                    print(f"Choose to grade {build_name} {upgrade_me[0].level} -> {upgrade_me[0].level + 1}")
+                    logger.info(f"Choose to grade {build_name} {upgrade_me[0].level} -> {upgrade_me[0].level + 1}")
                     if upgrade_me[0].name == "Изгородь":
                         driver.get(url + "build.php?id=40&gid=33")
                     else:
@@ -131,7 +134,7 @@ def upgrade_building_on_main(driver, tier: int, url: str, building_tier1: List[T
                     build_button.click()
                     return True
     except Exception as e:
-        print(f"Failed upgrade main: {e}")
+        logger.warning(f"Failed upgrade main: {e}")
         return False
     return False
 
@@ -148,7 +151,7 @@ def get_upcoming_attack(driver):
     upcoming = driver.find_element(By.CLASS_NAME, "villageInfobox.movements")
     if "Напад" in upcoming.find_element(By.CLASS_NAME, "a1").text:
         timer = upcoming.find_element(By.CLASS_NAME, "timer")
-        print(f"Upcaming attack in {timer.text}")
+        logger.info(f"Upcaming attack in {timer.text}")
 
 
 def action_in_city_middle(driver, action: Actions):
@@ -164,9 +167,9 @@ def action_in_city_middle(driver, action: Actions):
             process.click()
             time.sleep(2)
         except Exception as e:
-            print("No celebration")
+            logger.info("No celebration")
         else:
-            print("Celebration started")
+            logger.info("Celebration started")
     elif action == Actions.build_traps:
         slot = driver.find_element(By.XPATH, ".//*[contains(@data-name,'Капканщик')]")
         slot.click()
@@ -180,8 +183,8 @@ def action_in_city_middle(driver, action: Actions):
 
             driver.find_element(By.CLASS_NAME, "textButtonV1.green.startBuild").click()
             time.sleep(2)
-            print("Purchased traps")
-        print("No traps aviable")
+            logger.info("Purchased traps")
+        logger.info("No traps aviable")
     elif action == Actions.build_colonist:
         slot = driver.find_element(By.XPATH, ".//*[contains(@data-name,'Резиденция')]")
         slot.click()
@@ -195,8 +198,8 @@ def action_in_city_middle(driver, action: Actions):
             inp.send_keys(1)
             driver.find_element(By.CLASS_NAME, "textButtonV1.green.startBuild").click()
             time.sleep(2)
-            print("Purchased colonists")
-        print("Colonists not available")
+            logger.info("Purchased colonists")
+        logger.info("Colonists not available")
 
 
 def get_current_army(driver):
@@ -220,7 +223,7 @@ def get_current_army(driver):
             except Exception as e:
                 ...
     except Exception as e:
-        print(f"Failed to get army: {e}")
+        logger.info(f"Failed to get army: {e}")
     return 0
 
 
@@ -272,7 +275,7 @@ def get_achivs_reses(driver):
         except NoSuchElementException:
             break
         get_res_button.click()
-        print("Got achivements res")
+        logger.info("Got achivements res")
         time.sleep(1)
     try:
         close_achives_button = driver.find_element(By.ID, "closeContentButton")
@@ -311,13 +314,13 @@ def get_from_hero(driver):
 
             else:
                 approve_button.click()
-                print("Got res from hero")
+                logger.info("Got res from hero")
     try:
         time.sleep(1)
         close_button = driver.find_element(By.ID, "closeContentButton")
         close_button.click()
     except Exception as e:
-        print(f"Failed to close: {e}")
+        logger.info(f"Failed to close: {e}")
         ...
     time.sleep(1)
 
@@ -353,10 +356,10 @@ def purchase_resource(driver, url, building_tier1: List[Tuple] = None, building_
         in_progress_buildings = driver.find_element(By.CLASS_NAME, "finishNow")
     except Exception as e:
         in_progress = False
-        print("Process resource building...")
+        logger.info("Process resource building...")
     else:
         in_progress = True
-        print("Already in progress...")
+        logger.info("Already in progress...")
 
     if not in_progress:
         # get done achivements resources
@@ -364,10 +367,10 @@ def purchase_resource(driver, url, building_tier1: List[Tuple] = None, building_
         min_level, min_level_elem = get_min_level_elem(driver)
         upgraded = False
         if 1 <= min_level < 3:
-            print(f"Resources are ok, min level = {min_level}, go tier1")
+            logger.info(f"Resources are ok, min level = {min_level}, go tier1")
             upgraded = upgrade_building_on_main(driver, tier=1, url=url, building_tier1=building_tier1)
         elif min_level >= 5:
-            print(f"Resources are ok, min level = {min_level}, go tier2")
+            logger.info(f"Resources are ok, min level = {min_level}, go tier2")
             upgraded = upgrade_building_on_main(driver, tier=2, url=url, building_tier2=building_tier2)
 
             # Пытаемся запустить праздник
@@ -376,16 +379,16 @@ def purchase_resource(driver, url, building_tier1: List[Tuple] = None, building_
         if not upgraded:
             min_level, min_level_elem = get_min_level_elem(driver)
             time.sleep(1)
-            print("Not upgraded main, try upgrade res")
+            logger.info("Not upgraded main, try upgrade res")
             min_level_elem.click()
             try:
                 purchase_button = driver.find_element(By.XPATH, "//button[contains(@value,'Улучшить до уровня')]")
                 purchase_button.click()
             except NoSuchElementException:
                 get_from_hero(driver)
-                print("Not enought resources!!!")
+                logger.info("Not enought resources!!!")
             else:
-                print("Upgrade started")
+                logger.info("Upgrade started")
             try:
                 close_button = driver.find_element(By.XPATH, "//button[contains(@class,'contentTitleButton')]")
                 close_button.click()
@@ -403,7 +406,7 @@ def post_actions(driver):
                                                                                                           'ignore').decode().replace(
         "%", ""))
     if hp < 40:
-        print("hero is low, ski trip")
+        logger.info("hero is low, ski trip")
         return
     trip_list = driver.find_element(By.XPATH, "//*[contains(@href,'adventures')]")
     trip_list.click()
@@ -414,7 +417,7 @@ def post_actions(driver):
     except NoSuchElementException as e:
         ...
     else:
-        print("Moved hero to trip")
+        logger.info("Moved hero to trip")
 
     # upgrade hero
 
@@ -432,22 +435,22 @@ def post_actions(driver):
     except Exception as e:
         ...
     else:
-        print("Hero point purchased")
+        logger.info("Hero point purchased")
 
     try:
         action_in_city_middle(driver, Actions.build_colonist)
     except Exception as e:
-        print("colonist failed")
+        logger.info("colonist failed")
 
     try:
         action_in_city_middle(driver, Actions.celebration)
     except Exception as e:
-        print("celebration failed")
+        logger.info("celebration failed")
 
     try:
         action_in_city_middle(driver, Actions.build_traps)
     except Exception as e:
-        print("traps failed")
+        logger.info("traps failed")
 
     try:
         get_upcoming_attack(driver)
@@ -455,7 +458,7 @@ def post_actions(driver):
         ...
 
     army_n = get_current_army(driver)
-    print(f"{army_n}  Фаланг в деревне.")
+    logger.info(f"{army_n}  Фаланг в деревне.")
     if army_n < 100:
         ...
 
@@ -489,7 +492,7 @@ def run_travian(creds: Optional[List[Tuple]] = None, creds_file: Optional[str] =
         while True:
             for email, password in creds:
                 try:
-                    print(f"Started with {email}")
+                    logger.info(f"Started with {email}")
                     driver = login(driver, server_url, email, password)
                     purchase_resource(driver, server_url)
                     second = is_second_village_exist(driver)
@@ -499,14 +502,14 @@ def run_travian(creds: Optional[List[Tuple]] = None, creds_file: Optional[str] =
                     post_actions(driver)
                 except Exception as e:
 
-                    print(f"Failed for {email=}, {password=}\n{e}")
-                print(f"Done at {datetime.now()}")
+                    logger.info(f"Failed for {email=}, {password=}\n{e}")
+                logger.info(f"Done at {datetime.now()}")
                 time.sleep(2)
             time.sleep(4 * 60)
     else:
         for email, password in creds:
             try:
-                print(f"Started with {email}")
+                logger.info(f"Started with {email}")
                 driver = login(driver, server_url, email, password)
                 purchase_resource(driver, server_url)
                 second = is_second_village_exist(driver)
@@ -516,8 +519,8 @@ def run_travian(creds: Optional[List[Tuple]] = None, creds_file: Optional[str] =
                 post_actions(driver)
             except Exception as e:
 
-                print(f"Failed for {email=}, {password=}\n{e}")
-            print(f"Done at {datetime.now()}")
+                logger.info(f"Failed for {email=}, {password=}\n{e}")
+            logger.info(f"Done at {datetime.now()}")
             time.sleep(2)
 
     driver.close()

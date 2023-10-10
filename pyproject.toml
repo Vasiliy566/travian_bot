@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "travibot"
-version = "0.0.2"
+version = "1.0.0"
 authors = [
     { name = "Isaev Vasily", email = "vasyaisaev31@gmail.com" },
 ]
